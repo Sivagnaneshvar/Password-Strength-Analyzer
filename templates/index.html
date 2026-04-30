@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Password Checker</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            background-color: #0f172a;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            background-color: #1e293b;
+            padding: 28px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            background-color: #475569;
+            border-radius: 8px;
+            height: 42px;
+            padding: 0 8px;
+        }
+
+        input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        input::placeholder {
+            color: #cbd5f5;
+        }
+
+        .toggle-eye {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-eye svg {
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+        }
+
+        .progress-bar {
+            height: 7px;
+            border-radius: 5px;
+            margin-top: 14px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, red, orange, green);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .weak { width: 30%; }
+        .medium { width: 60%; }
+        .strong { width: 100%; }
+
+        .result {
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .crack-time {
+            color: #22c55e;
+            margin-top: 5px;
+        }
+
+        .hint {
+            color: #38bdf8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Password Strength Checker</h2>
+
+    <div class="input-area">
+        <input type="password" id="password" placeholder="Enter password" oninput="analyzePassword()">
+
+        <div class="toggle-eye" onclick="togglePassword()">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="bar" class="progress-bar"></div>
+
+    <div class="result" id="resultText"></div>
+    <div class="crack-time" id="crackText"></div>
+    <div class="hint" id="hintText"></div>
+</div>
+
+<script>
+function togglePassword() {
+    const input = document.getElementById("password");
+    input.type = input.type === "password" ? "text" : "password";
+}
+
+function analyzePassword() {
+    const pwd = document.getElementById("password").value;
+
+    fetch('/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        const bar = document.getElementById("bar");
+        bar.className = "progress-bar";
+
+        if (data.strength === "Weak") bar.classList.add("weak");
+        else if (data.strength === "Medium") bar.classList.add("medium");
+        else bar.classList.add("strong");
+
+        document.getElementById("resultText").innerText =
+            `Strength: ${data.strength} | Entropy: ${data.entropy.toFixed(2)} | Reused: ${data.reused}`;
+
+        document.getElementById("crackText").innerText =
+            `Crack Time: ${data.crack_time}`;
+
+        let message = "";
+
+        if (pwd.length < 8) {
+            message = "Password is too short";
+        } else if (!/[A-Z]/.test(pwd)) {
+            message = "Try adding uppercase letters";
+        } else if (!/[0-9]/.test(pwd)) {
+            message = "Include some numbers";
+        } else if (!/[^A-Za-z0-9]/.test(pwd)) {
+            message = "Add special characters (!@#$)";
+        } else {
+            message = "Looks good 👍";
+        }
+
+        document.getElementById("hintText").innerText = message;
+    });
+}
+</script>
+
+</body>
+</html>
