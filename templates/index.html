@@ -1,170 +1,259 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Password Checker</title>
+    <title>Password Analyzer</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
+
         body {
             margin: 0;
-            background-color: #0f172a;
+            background: #0f172a;
             font-family: 'Poppins', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            color: #fff;
+            color: white;
         }
 
-        .container {
-            background-color: #1e293b;
-            padding: 28px;
-            border-radius: 12px;
-            width: 350px;
+        .card {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 14px;
+            width: 360px;
             text-align: center;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
 
         h2 {
-            margin-bottom: 18px;
-            font-weight: 600;
+            margin-bottom: 20px;
         }
 
-        .input-area {
+        .input-box {
             display: flex;
             align-items: center;
-            background-color: #475569;
-            border-radius: 8px;
-            height: 42px;
-            padding: 0 8px;
+            background: #334155;
+            border-radius: 10px;
+            height: 45px;
+            padding: 0 10px;
         }
 
         input {
             flex: 1;
+            height: 100%;
             border: none;
             outline: none;
             background: transparent;
-            color: #fff;
-            font-size: 14px;
+            color: white;
+            font-size: 15px;
         }
 
         input::placeholder {
-            color: #cbd5f5;
+            color: #94a3b8;
         }
 
-        .toggle-eye {
-            cursor: pointer;
+        /* 👁️ EYE ICON */
+
+        .eye {
+            width: 30px;
             display: flex;
+            justify-content: center;
             align-items: center;
+            cursor: pointer;
         }
 
-        .toggle-eye svg {
-            width: 18px;
-            height: 18px;
-            fill: #fff;
+        .eye svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
         }
 
-        .progress-bar {
-            height: 7px;
+        /* 🔥 STRENGTH BAR */
+
+        .bar {
+            height: 8px;
             border-radius: 5px;
-            margin-top: 14px;
+            margin-top: 15px;
             margin-bottom: 10px;
-            background: linear-gradient(to right, red, orange, green);
+            background: #475569;
             width: 0%;
             transition: width 0.3s ease;
         }
 
-        .weak { width: 30%; }
-        .medium { width: 60%; }
-        .strong { width: 100%; }
-
-        .result {
-            font-size: 13px;
-            margin-top: 8px;
+        .weak {
+            width: 30%;
+            background: red;
         }
 
-        .crack-time {
+        .medium {
+            width: 60%;
+            background: orange;
+        }
+
+        .strong {
+            width: 100%;
+            background: #22c55e;
+        }
+
+        #result {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        #crack {
+            margin-top: 6px;
             color: #22c55e;
-            margin-top: 5px;
         }
 
-        .hint {
+        #suggestion {
+            margin-top: 5px;
             color: #38bdf8;
-            margin-top: 4px;
         }
+
     </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="card">
+
     <h2>Password Strength Checker</h2>
 
-    <div class="input-area">
-        <input type="password" id="password" placeholder="Enter password" oninput="analyzePassword()">
+    <div class="input-box">
 
-        <div class="toggle-eye" onclick="togglePassword()">
+        <input
+            type="password"
+            id="password"
+            placeholder="Enter password"
+            oninput="checkPassword()"
+        >
+
+        <div class="eye" onclick="togglePassword()">
+
             <svg viewBox="0 0 24 24">
                 <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
             </svg>
+
         </div>
+
     </div>
 
-    <div id="bar" class="progress-bar"></div>
+    <div id="strengthBar" class="bar"></div>
 
-    <div class="result" id="resultText"></div>
-    <div class="crack-time" id="crackText"></div>
-    <div class="hint" id="hintText"></div>
+    <p id="result"></p>
+
+    <p id="crack"></p>
+
+    <p id="suggestion"></p>
+
 </div>
 
 <script>
+
 function togglePassword() {
-    const input = document.getElementById("password");
-    input.type = input.type === "password" ? "text" : "password";
+
+    let input = document.getElementById("password");
+
+    input.type =
+        input.type === "password"
+        ? "text"
+        : "password";
 }
 
-function analyzePassword() {
-    const pwd = document.getElementById("password").value;
+function checkPassword() {
 
-    fetch('/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pwd })
-    })
-    .then(response => response.json())
-    .then(data => {
+    let pwd = document.getElementById("password").value;
 
-        const bar = document.getElementById("bar");
-        bar.className = "progress-bar";
+    let strength = "Weak";
+    let entropy = 0;
+    let crack = "Seconds";
+    let reused = false;
 
-        if (data.strength === "Weak") bar.classList.add("weak");
-        else if (data.strength === "Medium") bar.classList.add("medium");
-        else bar.classList.add("strong");
+    let score = 0;
 
-        document.getElementById("resultText").innerText =
-            `Strength: ${data.strength} | Entropy: ${data.entropy.toFixed(2)} | Reused: ${data.reused}`;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
-        document.getElementById("crackText").innerText =
-            `Crack Time: ${data.crack_time}`;
+    entropy = pwd.length * score * 2.5;
 
-        let message = "";
+    if (score <= 1) {
 
-        if (pwd.length < 8) {
-            message = "Password is too short";
-        } else if (!/[A-Z]/.test(pwd)) {
-            message = "Try adding uppercase letters";
-        } else if (!/[0-9]/.test(pwd)) {
-            message = "Include some numbers";
-        } else if (!/[^A-Za-z0-9]/.test(pwd)) {
-            message = "Add special characters (!@#$)";
-        } else {
-            message = "Looks good 👍";
-        }
+        strength = "Weak";
+        crack = "Seconds";
+    }
 
-        document.getElementById("hintText").innerText = message;
-    });
+    else if (score <= 3) {
+
+        strength = "Medium";
+        crack = "Hours to Days";
+    }
+
+    else {
+
+        strength = "Strong";
+        crack = "Years";
+    }
+
+    let bar = document.getElementById("strengthBar");
+
+    bar.className = "bar";
+
+    if (strength === "Weak") {
+
+        bar.classList.add("weak");
+    }
+
+    else if (strength === "Medium") {
+
+        bar.classList.add("medium");
+    }
+
+    else {
+
+        bar.classList.add("strong");
+    }
+
+    document.getElementById("result").innerText =
+        `Strength: ${strength} | Entropy: ${entropy.toFixed(2)} | Reused: ${reused}`;
+
+    document.getElementById("crack").innerText =
+        `Crack Time: ${crack}`;
+
+    let suggestion = "";
+
+    if (pwd.length < 8) {
+
+        suggestion = "Password too short";
+    }
+
+    else if (!/[A-Z]/.test(pwd)) {
+
+        suggestion = "Add uppercase letters";
+    }
+
+    else if (!/[0-9]/.test(pwd)) {
+
+        suggestion = "Add numbers";
+    }
+
+    else if (!/[^A-Za-z0-9]/.test(pwd)) {
+
+        suggestion = "Add symbols (!@#$)";
+    }
+
+    else {
+
+        suggestion = "Excellent! Strong password 👍";
+    }
+
+    document.getElementById("suggestion").innerText =
+        suggestion;
 }
+
 </script>
 
 </body>
